@@ -1,13 +1,11 @@
 import datetime
-import json
-import hashlib
 
 
 def log_path(log_path):
     def logger(old_fu):
         def new_fu(*args, **kwargs):
             to_log = old_fu(*args, **kwargs)
-            args = locals().get('args')
+            args = f"{locals().get('args')} {locals().get('kwargs')}"
             log_info = [
                 f'Время запуска: {datetime.datetime.now()}',
                 f'Имя функции: {old_fu.__name__}',
@@ -18,26 +16,51 @@ def log_path(log_path):
                 f.write('\n'.join(log_info))
         return new_fu
     return logger
+# ===================================================================
 
 
-@log_path("log.txt")
-def generate_pairs(path):
-    country_list = []
-    with open(path, encoding="utf-8") as data:
-        json_data = json.load(data)
-        for country in json_data:
-            country_list += country['translations']['rus']['common'].split('%')
-    countries = iter(country_list)
-    counter = 0
-    while counter < 250:
-        country = countries.__next__()
-        pair = f'{country} - https://ru.wikipedia.org/wiki/{country.replace(" ", "_")}\n'
-        with open('country pairs.txt', "a", encoding='utf-8') as f:
-            f.write(str(pair))
-        counter += 1
-        yield pair
+class Contact:
+    def __init__(self, f_name, l_name, phone, *args, **kwargs):
+        self.f_name = f_name
+        self.l_name = l_name
+        self.phone = phone
+        self.favorite = None
+        self.additional_info = []
+        for favorite in args:
+            self.favorite = favorite
+        for add_info_name, add_info_value in kwargs.items():
+            self.additional_info.append(f'{add_info_name}: {add_info_value}')
+        self.list_adds = '\n'.join(self.additional_info)
+
+    def __str__(self):
+        return f'Имя: {self.f_name}\n' \
+               f'Фамилия: {self.l_name}\n' \
+               f'Телефон: {self.phone}\n' \
+               f'В избранных: {self.favorite}\n' \
+               f'Дополнительная информация:\n{self.list_adds}'
 
 
-if __name__ == "__main__":
-    for pair in generate_pairs('countries.json'):
-        print(hashlib.md5(pair.encode('utf-8')).hexdigest())
+class PhoneBook:
+    def __init__(self, name):
+        self.book_name = name
+        self.contacts = []
+
+    @log_path("log.txt")
+    def print_contacts(self):
+        for i in self.contacts:
+            print('===========')
+            print(i)
+        pass
+
+    @log_path("log.txt")
+    def add_contact(self, f_name, l_name, phone, *args, **kwargs):
+        contact = Contact(f_name, l_name, phone, *args, **kwargs)
+        self.contacts.append(contact)
+        pass
+
+
+MyPhoneBook = PhoneBook("Черная Книжечка")
+
+if __name__ == '__main__':
+    MyPhoneBook.add_contact('John', 'Smith', '+71234567809', 'да', telegram='@johny', email='johny@smith.com')
+    MyPhoneBook.print_contacts()
